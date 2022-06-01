@@ -1,6 +1,6 @@
 # sabl
 
-[**sabl**](https://github.com/libsabl) is an open-source project to identify, describe, and implement effective software patterns which solve small problems clearly, can be composed to solve big problems, and which work consistently across many programming languages.
+[**sabl**](https://github.com/libsabl/patterns) is an open-source project to identify, describe, and implement effective software patterns which solve small problems clearly, can be composed to solve big problems, and which work consistently across many programming languages.
 
 ## Patterns
 
@@ -12,7 +12,7 @@
 
 The patterns included in the sabl project reflect an overall approach to software engineering. At the root of that philosophy is an assertion:
 
-<div style="font-size: 2rem; margin-top: 1em; padding: 1rem; margin-bottom: 1em; background: rgba(125,125,125,.1)">Engineers must understand the mechanics of the software they work on</div>
+> ### Engineers must understand the mechanics of the software they work on
 
 Engineering is a composition of and tension between **semantics** and **mechanics**, between **meaning** and **mathematics**, between **why** and **how**.  
 
