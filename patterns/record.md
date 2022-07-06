@@ -520,3 +520,6 @@ export class InvoiceLineRecord implements InvoiceLine {
   }
 }
 ```
+
+---
+&copy; 2022 Joshua Honig. All rights reserved. See [LICENSE](../LICENSE.md).
