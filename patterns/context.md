@@ -32,8 +32,6 @@ Consumers of a context retrieve injected values such as ambient state or depende
 
 The most common and safe pattern for getting and setting context values, including in go, is not actually contained in the context libraries themselves, but is described in detail below in [Getter / Setter Pattern](#getter--setter-pattern).
 
-### 
-
 ### Immutability
 
 Mechanically, a context is a linked list of **immutable** context nodes. New key-value pairs and new cancellation checkpoints are added to a context by wrapping a parent context with functions usually called `withValue` and `withCancel`. This pattern provides intrinsic thread safety even in highly concurrent environments. Even when concurrency is not a concern, the pattern provides total clarity and predictability.
