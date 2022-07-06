@@ -2,9 +2,9 @@ sabl / [patterns](../README.md#patterns) / record
 
 # record
  
-**record** is a pattern for representing a data model at runtime. It uses record or model instances exclusively to hold the attributes of a single flat row of data and to allow on-record caching of related records. Even with cached relations, records are passive and do not hold a connection to or knowledge of where the record was loaded from.
+**record** is a pattern for representing a data model at runtime. It uses record instances exclusively to hold the attributes of a single flat row of data and to allow on-record caching of related records. Even with cached relations, records are passive and do not hold a connection to or knowledge of where the record was loaded from.
 
-Conversely, records do provide features that communicate which attributes may be updated and when -- only when loaded, only indirectly through a mutator method, or any time simply by assigning to a property. These features express the intent of the underlying data model and aid authors in writing correct programs using that data model.
+Records do provide [features](#attributes-and-mutability) that communicate which attributes may be updated and when. These features express the intent of the underlying data model and aid authors in writing correct programs using that data model.
 
 ### Implementations
   
@@ -16,6 +16,40 @@ Most aspects of the record pattern are indeed *patterns* that authors implement 
  
 ## Basic pattern
 
+### No behaviors
+
+The record pattern explicitly rejects the "active record" pattern, or any other approach that attaches behaviors to records. Only two types of methods may be present on a record implementation:
+
+ - [Mutator methods](#protected-set-and-mutators) which perform simple attribute value updates on the record
+ - [Relation getters](#cached-relations) which asynchronously retrieve a related record or collection, possibly from a cache local to the record itself.
+
+There is one other method: The `load` method for assigning attribute values when loading from a data source, but this method should be on the records' [initializer](#initializers). In other words, the standard syntax for loading a record is:
+
+**TypeScript / JavaScript**
+```ts
+invoice.init.load(...);
+```
+
+**Go**
+```go
+ivc.Init().Load(...)
+```
+
+**C#**
+```c#
+invoice.Init.Load(...)
+```
+
+### Rationale
+
+In order to build and support software programs, humans must be able to accurately imagine how the programs will operate. Patterns currently prevalent in many ORMs and data application frameworks encourage attaching complex behaviors to records (often called **models**), both through defining methods directly on model classes and, even worse, by registering callbacks at various places within the lifecycle of what would otherwise be a simple CRUD operation.
+
+These patterns do indeed make it very easy to cause complex behaviors. That feels like a powerful and compelling *feature* to the proponents of such patterns, but it also makes completely and correctly imagining the behavior of a program effectively impossible, which in turn leads to unpredictable and undesired program behaviors.
+
+These patterns also create programs that are extremely difficult to test, due to the complex mixing of concerns such as simple storage and retrieval, with validation, with object graph navigation, with business logic. Even when automated coverage tools can demonstrate that all code paths have been covered by a test, the range of possible behaviors is so vast and unpredictable that code coverage provides little comfort as to the actual completeness of tests over possible behaviors and states.
+
+The pattern described here takes the opposite approach, intentionally restricting the range of possible uses and behaviors for records. By doing so, programs become much easier to understand, test, and build. All the other behaviors that in other patterns are attached directly to models can still be accomplished, but elsewhere.
+
 ### Features
 
 The record pattern consists of three complementary features:
@@ -24,7 +58,7 @@ The record pattern consists of three complementary features:
 2. [Relations](#cached-relations)
 3. [Initializers](#initializers)
 
-[Attribute modes](#attributes-and-mutability) communicate and enforce the circumstances in which attribute values may be **set or updated**. [Relations](#cached-relations) provide consistent mechanics for caching and retrieving related records. [Initializers](#initializers) provide a consistent patterns for updating the internal state of a record when loading attribute values or related objects from an external data source.
+[Attribute modes](#attributes-and-mutability) communicate and enforce the circumstances in which attribute values may be **set or updated**. [Relations](#cached-relations) provide consistent mechanics for caching and retrieving related records. [Initializers](#initializers) provide a consistent pattern for updating the internal state of a record when loading attribute values or related records from an external data source.
 
 ### Attributes and mutability
 
@@ -37,27 +71,27 @@ The following are the four attribute modes, from least to most restrictive:
 |simple / public|By client at any time, usually through direct assignment|
 |protected-set|By client using a mutator method|
 |write-once|By client but only when creating a record|
-|generated / read-only |Only by remote storage|
+|generated / readonly |Only by remote storage|
 
 #### simple / public
 
-Attributes that may be updated at any time with no particularly concerning consequences can simply be public fields modified by direct assignment.
+Attributes that may be updated at any time can simply be public fields modified by direct assignment. A common example is a display name for a record.
  
 #### protected-set and mutators
 
-These attributes may be updated by a client, but for semantic or human reasons the author of the data model wants to cause authors of code which use a record to stop and think before modifying the values of the applicable property. This is the programmatic equivalent of a flip-up toggle switch cover. In this case updating the attribute value is allowed, but an additional manual step is require to prevent accidental or careless changes. Thus the properties are readonly to prevent simple assignment, but **mutator** methods are provided in order to update the values.
+These attributes may be updated by a client, but for semantic or human reasons the author of the data model wants to cause authors of code which use a record to stop and think before modifying the values of the applicable attribute. This is the programmatic equivalent of a flip-up toggle switch cover. In this case updating the attribute value is allowed, but an additional manual step is required to prevent accidental or careless changes. Thus the runtime properties are readonly to prevent simple assignment, but **mutator** methods are provided in order to update the underlying values.
 
 Mutator methods may contain simple checks on the basic validity of data, but should never include business rules. Appropriate validity checks could include ensuring a string is non-empty or not too long for the intended data store field, or ensuring an integer is a known enumeration value.
  
-Mutator methods may also be used to maintain correctness between correlated attributes. For example, invoking `setQuantity` or `setPrice` on some invoice line record might also update the value of the computed `extendedAmount` field.
+Mutator methods may also be used to maintain correctness between correlated attributes. For example, invoking `setQuantity` or `setPrice` on some invoice line record might also update the value of the computed `extendedAmount` attribute.
 
-Mutator methods cannot perform any service-dependent validation, such as verifying that a value does not violate a unique constraint. They should also never modify data on any other record, even if those records are accessible through a cached relation. In other words, validation of interaction between a record and *other records* either in the runtime or underlying storage is explicitly and by design not what mutators are for in this pattern.
+Mutator methods should not require any injected services or other dependencies, and should not perform any service-dependent validation. They should also never modify data on any other record, even if those records are accessible through a cached relation. 
 
 #### write-once
   
-These attributes are supplied by a client when first creating a record, but they may never be changed afterwards. This is a logical concept that does not exist in any database system but is often important for the correct use of business data. The values can only be mechanically set on a record instance using its initializer.
+These attributes are supplied by a client when first creating a record, but they may never be changed afterwards. An example would be a client-generated unique identifier. This is a logical concept that does not exist in any database system, but it is often important for the correct use of business data. The underlying values of write-once attributes can only be mechanically set on a record instance using its [initializer](#initializers).
 
-#### generated / read-only / computed
+#### generated / readonly / computed
 
 These attributes are derived or set by the external data source. The values can only be mechanically set on a record instance using its initializer.
 
@@ -69,30 +103,30 @@ It is common in data-intensive applications to need to easily navigate from one 
 
 The patterns described here work whether or not the mechanisms used to retrieve related records are asynchronous, but it is strongly recommended that implementations use asynchronous methods for retrieving related records. The [implementations](#implementations) in the sabl libraries always use asynchronous methods for record retrieval. This precludes exposing related records as *properties*, which are intrinsically and semantically synchronous. 
 
-Modern programming languages that support asynchronous patterns also include internal optimizations to ensure that asynchronous methods which complete synchronously continue within the same frame or thread and incur minimal overhead. In this case, calling an asynchronous relation getter method will complete synchronously if the related record has already been cached.
+Modern programming languages that support asynchronous patterns also include internal optimizations to ensure that asynchronous methods which complete synchronously continue within the same frame or thread in which they were called and incur minimal overhead. In this case, calling an asynchronous relation getter method will complete synchronously if the related record has already been cached.
 
 The initializer pattern also provides simple APIs that allow synchronous checks for whether related records are already cached and, if so, to synchronously retrieve the cached values.
 
 Put another way: 
-- In order to fetch a related record, client code must always `await` a method, even if the related record or collection is already cached. 
+- In order to fetch a related record, client code must generally `await` a method, even if the related record or collection is already cached. 
 - In some languages, notably `go`, all methods are implicitly asynchronous and all calls are implicitly `awaited`. Even in languages where an explicit `await` is required, it is still fairly cheap to await a result that completes synchronously. 
-- Finally, hyper-optimization is possible (though generally not necessary) by first synchronously checking the internal state of the relation via the record's initializer.
+- Finally, hyper-optimization is possible, though generally not necessary, by first synchronously checking the internal state of the relation via the record's initializer.
 
 #### Context injection
 
-An important goal of the record pattern is to ensure that record instances are both passive and origin-agnostic. A record should neither know or retain knowledge about where attribute values or related records were retrieved from. 
+An important goal of the record pattern is to ensure that record instances are both passive and origin-agnostic. A record should neither know nor retain knowledge about where attribute values or related records were retrieved from.
 
-And yet, retrieving a related record requires interacting with some remote or in-memory data source or service. This apparent contradiction is resolved using the [context pattern](./context.md). Relation getter methods should always accept a context as the first argument. Any necessary services needed to fetch the related record or set of records can be retrieved from this injected context. For an illustration, see [relation implementation](#relation-implementation) below.
+And yet, retrieving a related record requires interacting with some remote or in-memory data source or service. This apparent contradiction is resolved using the [context pattern](./context.md). Relation getter methods should always accept a context as the first argument. Any necessary services needed to fetch the related record or set of records can be retrieved from this injected context. For an illustration, see [Implementation: Relation](#relation) below.
 
 ### Initializers
 
-Three of the four [attribute modes](#attributes-and-mutability) require that attribute properties prevent direct assignment of values. And yet the values must be set somehow when loading data onto a recod instance. The initializer pattern provides a consistent pattern for mechanically setting these attribute values in the context of loading data from an external data source.
+Three of the four [attribute modes](#attributes-and-mutability) require that runtime properties prevent direct assignment of attribute values. And yet the values must be set somehow when loading data onto a record instance. The initializer pattern provides a consistent pattern for accomplishing this, and for allowing clients to inspect or update the cache state of [relations](#cached-relations).
 
-All initialization and cache inspection APIs are consolidated under a single method or read-only property `init` which returns an object with a `load` method which accepts the scalar values of all attributes on the record.
+All initialization and cache inspection APIs are consolidated under a single method or readonly property `init` which returns an object with a `load` method which accepts the scalar values of all attributes on the record.
 
 #### Initial loading
 
-The `load` method should include logic to check whether the target record has already been initialized. If it has, the `load` method should throw an exception or return an error. This prevents simple mistakes where client code attempts to load more than one record of data to the same in-memory object. A simple implementation is to simply check if the primary key attribute or tuple still has its default / zero value.
+The `load` method should include logic to check whether the target record has already been loaded. If it has, the `load` method should throw an exception or return an error. This prevents simple mistakes where client code attempts to load more than one record of data to the same in-memory object. A simple implementation is to check if the primary key attribute or tuple still has its default / zero value.
 
 #### Reloading
 
@@ -102,7 +136,7 @@ If authors choose to support, this, they should if possible validate that the up
 
 #### Relations
 
-If a record has relations, the relation objects themselves should or can be exposed on the initializer object. This allows client code to explicitly check, set, or invalidate cache state. This is essential for enabling efficient eager loading of related objects to avoid unnecessary n+1 type queries to the origin data store.
+If a record has relations, the relation objects themselves should be exposed on the initializer object. This allows client code to check, set, or invalidate cache state. This is essential for enabling efficient eager loading of related objects to avoid unnecessary n+1 type queries to the origin data store.
 
 ## Example
 
@@ -145,7 +179,7 @@ export interface InvoiceInitter {
 }
 
 /** The Invoice is a composition of the props, the mutators,
- * the relations, and a read-only `init` property which
+ * the relations, and a readonly `init` property which
  * returns the given record's initializer. It also
  * implements the simple RecordOf interface. */
 export interface Invoice extends 
@@ -214,7 +248,7 @@ export interface InvoiceLine extends
 
 ##### Repository
 
-Here we use an extremely simple read-only repository interface for example purposes only. It does reflect the following conventions which hold true even for complete real programs: 
+Here we use an extremely simple readonly repository interface for example purposes only. It does reflect the following conventions which hold true even for complete real programs: 
 
 - Record operations should accept a [context](./context.md) so that dependencies can be injected
 - Record operations should be asynchronous
@@ -300,7 +334,7 @@ export class InvoiceLinesRelation extends CollectionRelation<
 
 #### Record
 
-With the relations defined relative to a known repository interface, we can now define the record implementations themselves. Once again, the examples here separately define the [record interfaces](#definition) and the concrete record implementations, but authors could choose to skip the interface definitions. Records are by design source agnostic, so even for test data there is no need to create mock record classes. Instead, actual record instances are initialized and then simply loaded with mock data.
+With the relations defined relative to a known repository interface, we can now define the record implementations themselves. Once again, the examples here separately define the [record interfaces](#definition) and the concrete record implementations, but authors could choose to skip the interface definitions. Records are by design source-agnostic, so even for test data there is no need to create mock record *classes*. Instead, normal record instances are initialized and then simply loaded with mock data.
 
 **invoice-record.ts**
 ```ts
