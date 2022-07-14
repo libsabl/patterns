@@ -4,10 +4,11 @@
 
 ## Patterns
 
-|Name|golang|dotnet/c#|js/ts|
+|Name|js/ts|golang|dotnet/c#|
 |-|:-:|:-:|:-:|
-|[context](./patterns/context.md)|[stdlib](https://pkg.go.dev/context)|-|[**sabl**](./packages/js.md)|
-|[record](./patterns/record.md)|-|-|[**sabl**](./packages/js.md)|
+|[context](./patterns/context.md)|[@sabl/context](https://www.npmjs.com/package/@sabl/context)|[stdlib:context](https://pkg.go.dev/context)|-|
+|[record](./patterns/record.md)|[@sabl/record](https://www.npmjs.com/package/@sabl/record)|-|-|
+|[storage pool](./patterns/storage-pool.md)|[@sabl/storage-pool](https://www.npmjs.com/package/@sabl/storage-pool)|-|-|
 
 ## License
 Unless explicitly identified otherwise in the contents of a file, the content in this repository is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/legalcode) license. As summarized in the [Commons Deed](https://creativecommons.org/licenses/by-sa/4.0/) and strictly defined in the [license](./LICENSE.md) itself: you may share or adapt this work, provided you give appropriate credit, provide a link to the license, and indicate if changes were made. In addition, you must preserve the original license. For the details and actual legal license, consult the [license](./LICENSE.md).

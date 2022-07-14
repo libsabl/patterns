@@ -2,6 +2,8 @@ sabl / [patterns](../README.md#patterns) / record
 
 # record
  
+<small>depends on: [**context**](./context.md)</small>
+
 **record** is a pattern for representing a data model at runtime. It uses record instances exclusively to hold the attributes of a single flat row of data and to allow on-record caching of related records. Even with cached relations, records are passive and do not hold a connection to or knowledge of where the record was loaded from.
 
 Records do provide [features](#attributes-and-mutability) that communicate which attributes may be updated and when. These features express the intent of the underlying data model and aid authors in writing correct programs using that data model.
@@ -10,9 +12,9 @@ Records do provide [features](#attributes-and-mutability) that communicate which
   
 Most aspects of the record pattern are indeed *patterns* that authors implement in their own code bases. sabl does provide implementations of common building blocks such as cached relations.
 
-|Language|Category|Source|Package|
+|Language|Maintainer|Source|Package|
 |-|-|-|-|
-|JS / TS|sabl|github : [libsabl/record-js](https://github.com/libsabl/record-js/blob/main/src)|[@sabl/record](https://www.npmjs.com/package/@sabl/record)|
+|JS / TS|sabl|github : [libsabl/record-js](https://github.com/libsabl/record-js)|[@sabl/record](https://www.npmjs.com/package/@sabl/record)|
  
 ## Basic pattern
 

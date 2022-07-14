@@ -8,10 +8,10 @@ The purpose of the context pattern is to make state injection and cancellation m
 
 ### Implementations
 
-|Language|Category|Source|Package|
+|Language|Maintainer|Source|Package|
 |-|-|-|-|
 |go|stdlib|github : [golang/go](https://github.com/golang/go/blob/master/src/context/context.go)|[context](https://pkg.go.dev/context)|
-|JS / TS|sabl|github : [libsabl/context-js](https://github.com/libsabl/context-js/blob/main/src/context.ts)|[@sabl/context](https://www.npmjs.com/package/@sabl/context)|
+|JS / TS|sabl|github : [libsabl/context-js](https://github.com/libsabl/context-js)|[@sabl/context](https://www.npmjs.com/package/@sabl/context)|
 <!-- |dotnet / C#|sabl|github : [libsabl/context-net](https://github.com/libsabl/context-net)|[Sabl.Context](https://www.nuget.org/packages/Sabl.Context)| -->
 
 ## Basic Pattern
