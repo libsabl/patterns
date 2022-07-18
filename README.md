@@ -4,10 +4,20 @@
 
 ## Patterns
 
+|Pattern|Purpose|
+|-|-|
+|[**context**](./patterns/context.md)|Inject state and dependencies and propagate cancellation signals|
+|[**record**](./patterns/record.md)|Represent a data model at runtime, with no attached behaviors|
+|[**txn**](./patterns/txn.md)|Implement transaction workflows agnostic of underlying storage type|
+|[**storage pool**](./patterns/storage-pool.md)|Describe lifecycle expectations for pooled connections|
+
+### Implementations
+
 |Name|js/ts|golang|dotnet/c#|
-|-|:-:|:-:|:-:|
+|-|:-|:-:|:-:|
 |[context](./patterns/context.md)|[@sabl/context](https://www.npmjs.com/package/@sabl/context)|[stdlib:context](https://pkg.go.dev/context)|-|
 |[record](./patterns/record.md)|[@sabl/record](https://www.npmjs.com/package/@sabl/record)|-|-|
+|[txn](./patterns/txn.md)|[@sabl/txn](https://www.npmjs.com/package/@sabl/txn)|-|-|
 |[storage pool](./patterns/storage-pool.md)|[@sabl/storage-pool](https://www.npmjs.com/package/@sabl/storage-pool)|-|-|
 
 ## License
