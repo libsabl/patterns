@@ -4,9 +4,9 @@ sabl / [patterns](../README.md#patterns) / txn
  
 <small>depends on: [**context**](./context.md)</small>
 
-**txn** is a simple, [context](https://github.com/libsabl/patterns/blob/main/patterns/context.md)-aware pattern for describing transactions - batches of operations which should all succeed together or be rolled back. The pattern can be used to run actual storage system transactions, but it is also useful for running conceptual transactions purely in a client runtime, which avoid the blocking costs of native database transactions but still allow clean up of resources if a series operations does not all succeed. 
+**txn** is a simple, [context](https://github.com/libsabl/patterns/blob/main/patterns/context.md)-aware pattern for describing transactions: batches of operations which should all succeed together or be rolled back. The pattern can be used to run actual storage system transactions, but it is also useful for running conceptual transactions purely in a client runtime, which avoid the blocking costs of native database transactions but still allow clean up of resources if a series operations does not all succeed. 
 
-The design of the top-level interfaces is based on the go standard library [`database/sql` package](https://pkg.go.dev/database/sql). That package actually does not define explicit interfaces for the pool (`DB`), connection (`Conn`), or transaction (`Txn`) types. This work extracts the common `BeginTx` pattern implicit in that package.
+The design of the top-level interfaces is based on the transaction APIs in the go standard library [`database/sql` package](https://pkg.go.dev/database/sql).
 
 ### Motivation
 
@@ -15,10 +15,6 @@ Although transactions are often implemented at the lowest levels of a physical s
 In well-structured code bases the decisions about which operations to link together in a transaction are often implemented in layers that should not even know about the specifics of storage. They simply need to "store an Invoice" or "delete a Product", they should not care if those operations are implemented in SQL statements, operations on a wide-column store, or in-memory operations for a mock repository provided during testing.
 
 Defining these interfaces and algorithms in the abstract allows authors to write effective business logic that includes transaction workflows, without depending on a specific storage type, let alone a specific proprietary driver. This is in turn allows concise and testable code while avoiding over-dependence on implementation details of underlying storage choices.
-
-### Change Sets
-
-The txn pattern includes the concept of a change set: A client-side transaction that simply accumulates callbacks which are executed on commit or rollback. 
  
 ## Implementations
   
@@ -40,7 +36,7 @@ The table below lists all registered implementations for all levels, types, and 
  
 |Language|Type|Platform|Maintainer|Source|Package|
 |-|-|-|-|-|-|
-|JS / TS|all|all|sabl|github : [libsabl/txn](https://github.com/libsabl/storage-pool-js)|[@sabl/txn](https://www.npmjs.com/package/@sabl/txn)|
+|JS / TS|all|all|sabl|github : [libsabl/txn-js](https://github.com/libsabl/txn-js)|[@sabl/txn](https://www.npmjs.com/package/@sabl/txn)|
 |JS / TS|relational|all|sabl|github : [libsabl/rdb-api-js](https://github.com/libsabl/rdb-js)|[@sabl/rdb-api](https://www.npmjs.com/package/@sabl/rdb-api)|
 |JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/rdb-mysql-js](https://github.com/libsabl/rdb-mysql-js)|[@sabl/rdb-mysql](https://www.npmjs.com/package/@sabl/rdb-mysql)|
  
