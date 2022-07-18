@@ -4,38 +4,21 @@ sabl / [patterns](../README.md#patterns) / storage pool
  
 <small>depends on: [**context**](./context.md)</small>
 
-**storage-pool** is a simple, [context](./context.md)-aware pattern for describing **connection pooling** and **storage transactions** agnostic of the underlying storage type. This same pattern works for relational, document, key-value, graph, and other storage architectures. 
+**storage-pool** is a simple, [context](./context.md)-aware pattern for describing **connection pooling** and **storage transactions** agnostic of the underlying storage type.
 
-Defining these interfaces directly allows authors to write effective business logic that includes basic CRUD actions and even transaction workflows, without depending on a specific storage type, let alone a specific proprietary driver or client library. This is in turn allows **concise and testable code** while avoiding over-dependence on implementation details of underlying storage choices.
+The primary purpose of describing this pattern is to set common expectations for [how pooled connections and transactions should behave](#basic-pattern) in asynchronous programming. The most important concept is distinguishing between **closing** pools or connections and **cancelling** operations via the contexts provided to pools, connections, transactions, or individual storage operations.
 
-The design of the top-level storage interfaces as well as the derived relational interfaces is based on the go standard library [`database/sql` package](https://pkg.go.dev/database/sql). That package actually does not define explicit interfaces for the pool (`DB`), connection (`Conn`), or transaction (`Txn`) types. This work extracts the common patterns implicit in that package.
+The design of the top-level storage interfaces as well as the derived relational interfaces is based on the go standard library [`database/sql` package](https://pkg.go.dev/database/sql). That package actually does not define explicit interfaces for the pool (`DB`), connection (`Conn`), or transaction (`Txn`) types. This work extracts the common patterns implicit in that package. One minor difference is the that `commit` and `rollback` methods of the `Txn` interface accept a [context](./context.md).
+ 
+## Transaction workflows
 
-## Why Bother?
-
-There is clear value in abstracting the common operations of a specific storage type, such as a relational database. Setting aside variations in, for example, SQL dialects, it is still helpful to have a uniform view of interacting with a relational database without having to revisit or rewrite higher-level code if one switches from MySQL to SQL Server. This was surely the motivation behind the original go [`database/sql` package](https://pkg.go.dev/database/sql) which established a common API for all relational database clients, or the [System.Data.Common](https://docs.microsoft.com/en-us/dotnet/api/system.data.common) APIs that provide the same uniformity in the dotnet ecosystem.
-
-But what about the higher level presented here: the idea of a storage pool or even a transaction without even knowing whether it is a relational database, a document store, or something else?
-
-The answer here is [also addressed below](#agnostic-of-storage-type-specific-to-lifecycle) but the essence is that storage-type-agnostic transactions are useful in the business logic layers of a well-structured application:
-
-Business logic **does not need to know the underlying storage type** even to invoke abstract CRUD operations on known record types. "Store an invoice" can be described in APIs that do not change whether the invoice's data is inserted in a table of a relational database, appended or merged into a document store, distributed in fragments across a wide-column store, or just added to an in-memory object graph that allows full fidelity testing of higher-level business logic without dependence on an external storage service.
-
-Business logic **does** care about expressing when a series of operations should all succeed or fail together. This is the essence of the transaction concept. Ideally transactions can be pushed all the way down to the storage layer (`START TRANSACTION / COMMIT`), while others may be effectively implemented on the client, at least partially, by queuing the execution of a series of storage operations until the conceptual transaction is committed. Either way it is a human concept that very much belongs in the business logic layers to decide whether it is important to link the fate of a series of specific storage operations.
-
-Drawing hard lines between layers, across which knowledge and information may not cross, is an essential activity in designing and building robust and maintainable software. Likewise, describing limited interfaces that can be easily mocked or replaced for testing is essential for building digital machines that can be tested well: where high code coverage is achievable, and high code coverage naturally achieves high *behavior* coverage. Providing for transactions while prohibiting business logic from even knowing the storage type is a powerful tool for furthering these engineering goals.
+This pattern does not attempt to describe the details of transaction workflows. A generic pattern for doing so is described in [txn](./txn.md). Transactions are described here only to the extent needed to understand what should happen to a transaction or its underlying connection when the transaction is either completed or canceled.
 
 ## Type-Specific Storage Operations
 
-The highest level of the storage pattern is agnostic of storage type, but includes no actual direct storage operations. Instead, each storage type (relational, graph, document, etc) tends to support a set of operations that are specific to that storage type but are supported by all platforms of that type. Relational databases can all accept a string SQL statement and list of parameters and either `exec` it for simple row count or `query` it for a scrollable cursor. Graph databases support the Gremlin API. Document stores all provide operations such as `insertOne` or `find`. Key-value stores all support basic `set`, `get`, and `del` operations, often with variants that control expiration and eviction.
+The storage pattern is agnostic of storage type and therefor includes no actual direct storage operations. Instead, each storage type (relational, graph, document, etc) tends to support a set of operations that are specific to that storage type but are supported by all platforms of that type. Relational databases can all accept a string SQL statement and list of parameters and either `exec` it for simple row count or `query` it for a scrollable cursor. Graph databases support the Gremlin API. Document stores all provide operations such as `insertOne` or `find`. Key-value stores all support basic `set`, `get`, and `del` operations, often with variants that control expiration and eviction.
 
 Consequently each storage type can often declare its own more derived interfaces that represent a union of the top-level pool, connection, and transaction interfaces with the type-specific storage operations. See [below](#type-specific-apis-example-stack) for an illustration of this.
-
-<!--  
-The sabl project has defined the following type-specific patterns:
-
-- [Storage Pool: Relational](./storage-relational.md)
-
--->
 
 ## Implementations
   
@@ -61,7 +44,7 @@ The table below lists all registered implementations for all levels, types, and 
 |JS / TS|relational|all|sabl|github : [libsabl/rdb-api-js](https://github.com/libsabl/rdb-js)|[@sabl/rdb-api](https://www.npmjs.com/package/@sabl/rdb-api)|
 |JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/rdb-mysql-js](https://github.com/libsabl/rdb-mysql-js)|[@sabl/rdb-mysql](https://www.npmjs.com/package/@sabl/rdb-mysql)|
  
-## Basic pattern - Abstract Storage Pool
+## Basic pattern
  
 The entire top-level storage pool pattern consists of three related concepts: A **pool**, a **connection**, and a **transaction**. 
  
@@ -77,7 +60,7 @@ In any given storage type, all three of these interfaces implement all of the CR
     - If a connection was obtained and the operation started, the operation is aborted, and the connection is [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool
 
 **Connection**
-  - **Lifecycle**: The underlying connection remains open until it is canceled or explicitly closed. This allows maintaining session state such as variables, settings, temporary tables, or open transactions, at the cost of holding on to a connection
+  - **Lifecycle**: The underlying connection remains open until it is canceled or explicitly closed. This allows maintaining session state such as variables, settings, temporary tables, or open transactions, at the cost of holding on to a connection.
 
   - **On Completion**: If the operation completed successfully, it is immediately committed (usually implicitly by the storage service), but the connection remains open and is not returned to the pool.
   
@@ -106,6 +89,8 @@ The storage pattern described here intentionally does not include a destroy meth
 
 The entire structural API can be summarized by the following interface definition, written here in TypeScript merely for example purposes. Details of each method are described below. Again, note that for any given storage type, the pool, connection, and transaction interfaces will *also* implement type-specific data operations such as `query` for a relational database, `insertOne` for a document store, or `set` for a key-value store.
 
+The transaction interface and `TxnOptions` are described in more detail in the [txn](./txn.md) pattern.
+
 ```ts
 interface StoragePool {
   conn(ctx: Context): Promise<StorageConn>;
@@ -119,26 +104,8 @@ interface StorageConn {
 }
 
 interface StorageTxn {
-  commit(): Promise<void>;
-  rollback(): Promise<void>;
-}
-
-// Transaction options that may or may not be supported
-// by a particular storage type or platform
-interface TxnOptions {
-  readonly isolationLevel?: IsolationLevel;
-  readonly readOnly?: boolean;
-}
- 
-enum IsolationLevel {
-  default,
-  readUncommitted,
-  readCommitted,
-  writeCommitted,
-  repeatableRead,
-  snapshot,
-  serializable,
-  linearizable,
+  commit(ctx: IContext): Promise<void>;
+  rollback(ctx: IContext): Promise<void>;
 }
 ```
 
@@ -203,30 +170,16 @@ export interface StackConn {
   close(): Promise<void>;
 }
 
-// Structurally implements StackOps and StorageConn
+// Structurally implements StackOps and StorageTxn
 export interface StackTxn {
   push(ctx: Context, val: any): Promise<void>;
   peek(ctx: Context): Promise<any>;
   pop(ctx: Context): Promise<any>;
 
-  beginTxn(ctx: IContext, opts?: TxnOptions): Promise<StackTxn>;
-  close(): Promise<void>;
+  commit(ctx: IContext): Promise<void>;
+  rollback(ctx: IContext): Promise<void>;
 }
 ```
-
-The key result is two complementary views of the same objects:
-
-#### **Agnostic of lifecycle, specific to storage type**
-
-In the lower levels of a data access layer or equivalent, it is necessary to know the actual storage type while at the same time not caring if the current context is an ephemeral pool operation, a long-lived connection, or an open transaction. If the current concern is to "create an invoice record in the actual data store", the relational `INSERT` or document `insertOne` operation is identical whether or not the context is a pool, connection or transaction.
-
-In our stack example, these locations would treat all three interfaces simply as a `StackOps`.
-
-#### **Agnostic of storage type, specific to lifecycle**
-
-In higher levels of business logic where abstract CRUD operations are validated and composed, it is common to need to express the concept of a transaction (all these things must succeed or fail together), without knowing or caring whether the underlying storage type is relation, document, or otherwise. The key concept is: create the invoice, and create the first line, and create the receipt, and create the audit log, and update the customer summary, and either commit it all together or rollback partial work. 
-
-In these places, code will treat the interfaces as abstract `StoragePool`, `StorageConn`, and `StorageTxn` interfaces. In fact, it is possible to implement a generic transaction workflow exclusively with these top-level interfaces, and sabl implementations of the top-level interfaces provide this.
 
 ---
 &copy; 2022 Joshua Honig. All rights reserved. See [LICENSE](../LICENSE.md).
