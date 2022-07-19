@@ -4,7 +4,7 @@ sabl / [patterns](../README.md#patterns) / storage pool
  
 <small>depends on: [**context**](./context.md)</small>
 
-**storage-pool** is a simple, [context](./context.md)-aware pattern for describing **connection pooling** and **storage transactions** agnostic of the underlying storage type.
+**storage pool** is a simple, [context](./context.md)-aware pattern for describing **connection pooling** and **storage transactions** agnostic of the underlying storage type.
 
 The primary purpose of describing this pattern is to set common expectations for [how pooled connections and transactions should behave](#basic-pattern) in asynchronous programming. The most important concept is distinguishing between **closing** pools or connections and **cancelling** operations via the contexts provided to pools, connections, transactions, or individual storage operations.
 
@@ -41,8 +41,8 @@ The table below lists all registered implementations for all levels, types, and 
 |Language|Type|Platform|Maintainer|Source|Package|
 |-|-|-|-|-|-|
 |JS / TS|all|all|sabl|github : [libsabl/storage-pool-js](https://github.com/libsabl/storage-pool-js)|[@sabl/storage-pool](https://www.npmjs.com/package/@sabl/storage-pool)|
-|JS / TS|relational|all|sabl|github : [libsabl/rdb-api-js](https://github.com/libsabl/rdb-js)|[@sabl/rdb-api](https://www.npmjs.com/package/@sabl/rdb-api)|
-|JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/rdb-mysql-js](https://github.com/libsabl/rdb-mysql-js)|[@sabl/rdb-mysql](https://www.npmjs.com/package/@sabl/rdb-mysql)|
+|JS / TS|relational|all|sabl|github : [libsabl/db-api-js](https://github.com/libsabl/db-api-js)|[@sabl/db-api](https://www.npmjs.com/package/@sabl/db-api)|
+|JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/db-mysql-js](https://github.com/libsabl/db-mysql-js)|[@sabl/db-mysql](https://www.npmjs.com/package/@sabl/db-mysql)|
  
 ## Basic pattern
  

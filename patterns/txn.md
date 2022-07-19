@@ -37,8 +37,8 @@ The table below lists all registered implementations for all levels, types, and 
 |Language|Type|Platform|Maintainer|Source|Package|
 |-|-|-|-|-|-|
 |JS / TS|all|all|sabl|github : [libsabl/txn-js](https://github.com/libsabl/txn-js)|[@sabl/txn](https://www.npmjs.com/package/@sabl/txn)|
-|JS / TS|relational|all|sabl|github : [libsabl/rdb-api-js](https://github.com/libsabl/rdb-js)|[@sabl/rdb-api](https://www.npmjs.com/package/@sabl/rdb-api)|
-|JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/rdb-mysql-js](https://github.com/libsabl/rdb-mysql-js)|[@sabl/rdb-mysql](https://www.npmjs.com/package/@sabl/rdb-mysql)|
+|JS / TS|relational|all|sabl|github : [libsabl/db-api-js](https://github.com/libsabl/db-api-js)|[@sabl/db-api](https://www.npmjs.com/package/@sabl/db-api)|
+|JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/db-mysql-js](https://github.com/libsabl/db-mysql-js)|[@sabl/db-mysql](https://www.npmjs.com/package/@sabl/db-mysql)|
  
 ## Basic Pattern
 
