@@ -9,6 +9,25 @@ sabl / [patterns](../README.md#patterns) / db api
 
 The patterns described here are based on the [golang](https://go.dev/doc/) standard library [`database/sql` package](https://pkg.go.dev/database/sql).
 
+## Implementations
+  
+Implementations exist at two levels:
+
+1. **Abstract Interfaces**
+
+   These libraries describe the common interfaces documented here.
+
+3. **Platform adapters**
+
+   These libraries wrap the proprietary client API of a particular storage platform to expose them as the common relational interfaces for the applicable storage type. 
+
+The table below lists implementations for all levels and platforms:
+ 
+|Language|Platform|Maintainer|Package|Source|
+|-|-|-|-|-|
+|JS / TS|all|sabl|[@sabl/db-api](https://www.npmjs.com/package/@sabl/db-api)|github : [libsabl/db-api-js](https://github.com/libsabl/db-api-js)|
+|JS / TS|[MySQL](https://www.mysql.com)|sabl|[@sabl/db-mysql](https://www.npmjs.com/package/@sabl/db-mysql)|github : [libsabl/db-mysql-js](https://github.com/libsabl/db-mysql-js)|
+
 ## Basic Pattern
 
 The original golang [`database/sql` package](https://pkg.go.dev/database/sql) summarizes all interactions with relational databases to a concise set of interfaces that work the same regardless of the underlying database platform. That package combines connection pooling, transaction workflows, and basic SQL CRUD APIs in a set of types such as `DB`, `Conn`, `Stmt`, and `Tx`. 
@@ -56,7 +75,7 @@ public interface DbApi {
 
 ### Result
 
-A `Result` is just a wrapped for a count of affected rows and, where supported, the most recent inserted row id.
+A `Result` is just a wrapper for a count of affected rows and, where supported, the most recent inserted row id.
 
 **TypeScript**
 ```ts
