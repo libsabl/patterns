@@ -9,7 +9,8 @@
 |[**context**](./patterns/context.md)|Inject state and dependencies and propagate cancellation signals|
 |[**record**](./patterns/record.md)|Represent a data model at runtime, with no attached behaviors|
 |[**txn**](./patterns/txn.md)|Implement transaction workflows agnostic of underlying storage type|
-|[**storage pool**](./patterns/storage-pool.md)|Describe lifecycle expectations for pooled connections|
+|[**storage pool**](./patterns/storage-pool.md)|Describe lifecycle expectations for pooled connections| 
+|[**db api**](./patterns/db-api.md)|Provide a generic interface around relational databases.|
 
 ### Implementations
 
@@ -19,6 +20,7 @@
 |[record](./patterns/record.md)|[@sabl/record](https://www.npmjs.com/package/@sabl/record)|-|-|
 |[txn](./patterns/txn.md)|[@sabl/txn](https://www.npmjs.com/package/@sabl/txn)|-|-|
 |[storage pool](./patterns/storage-pool.md)|[@sabl/storage-pool](https://www.npmjs.com/package/@sabl/storage-pool)|-|-|
+|[db api](./patterns/db-api.md)|[@sabl/db-api](https://www.npmjs.com/package/@sabl/db-api)|-|-|
 
 ## License
 Unless explicitly identified otherwise in the contents of a file, the content in this repository is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/legalcode) license. As summarized in the [Commons Deed](https://creativecommons.org/licenses/by-sa/4.0/) and strictly defined in the [license](./LICENSE.md) itself: you may share or adapt this work, provided you give appropriate credit, provide a link to the license, and indicate if changes were made. In addition, you must preserve the original license. For the details and actual legal license, consult the [license](./LICENSE.md).
