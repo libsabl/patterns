@@ -36,13 +36,14 @@ Implementations exist at three levels:
 
    These libraries wrap the proprietary client API of a particular storage platform to expose them as the common interfaces for the applicable storage type. 
 
-The table below lists all registered implementations for all levels, types, and platforms:
+The table below lists implementations for the top two levels. For platform-specific adapters, see [db-api](./db-api.md#implementations).
  
-|Language|Type|Platform|Maintainer|Source|Package|
+|Language|Type|Platform|Maintainer|Package|Source|
 |-|-|-|-|-|-|
-|JS / TS|all|all|sabl|github : [libsabl/storage-pool-js](https://github.com/libsabl/storage-pool-js)|[@sabl/storage-pool](https://www.npmjs.com/package/@sabl/storage-pool)|
-|JS / TS|relational|all|sabl|github : [libsabl/db-api-js](https://github.com/libsabl/db-api-js)|[@sabl/db-api](https://www.npmjs.com/package/@sabl/db-api)|
-|JS / TS|relational|[MySQL](https://www.mysql.com)|sabl|github : [libsabl/db-mysql-js](https://github.com/libsabl/db-mysql-js)|[@sabl/db-mysql](https://www.npmjs.com/package/@sabl/db-mysql)|
+|JS / TS|all|all|sabl|[@sabl/storage-pool](https://www.npmjs.com/package/@sabl/storage-pool)|github : [libsabl/storage-pool-js](https://github.com/libsabl/storage-pool-js)|
+|JS / TS|relational|all|sabl|[@sabl/db-api](https://www.npmjs.com/package/@sabl/db-api)|github : [libsabl/db-api-js](https://github.com/libsabl/db-api-js)|
+|go|relational|all|Google|[database/sql](https://pkg.go.dev/database/sql)|github : [golang/go](https://github.com/golang/go/blob/master/src/database/sql/sql.go)|
+
  
 ## Basic pattern
  
