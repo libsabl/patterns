@@ -48,47 +48,8 @@ The table below lists implementations for the top two levels. For platform-speci
 ## Basic pattern
  
 The entire top-level storage pool pattern consists of three related concepts: A **pool**, a **connection**, and a **transaction**. 
- 
-In any given storage type, all three of these interfaces implement all of the CRUD APIs for the applicable type. That is, a relational SQL `query` could be invoked on a pool, a connection, or a transaction. The difference is in session continuity and in the effect of canceling the context provided to the operation:
 
-**Pool**
-  - **Lifecycle**: A connection is retrieved from the pool, and is [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool as soon as the single operation is complete.
-
-  - **On Completion**: If the operation completed successfully, it is immediately committed (usually implicitly by the storage service), and the connection is automatically [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool.
-  
-  - **On Cancellation**
-    - If **a connection is not yet available**, the operation is terminated immediately and the request to the pool is aborted
-    - If a connection was obtained and the operation started, the operation is aborted, and the connection is [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool
-
-**Connection**
-  - **Lifecycle**: The underlying connection remains open until it is canceled or explicitly closed. This allows maintaining session state such as variables, settings, temporary tables, or open transactions, at the cost of holding on to a connection.
-
-  - **On Completion**: If the operation completed successfully, it is immediately committed (usually implicitly by the storage service), but the connection remains open and is not returned to the pool.
-  
-  - **On Cancellation**:
-    - **If a non-transaction operation is in progress**, it is immediately aborted and the connection is [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool.
-    - **If a transaction is open**, it is rolled back, and the connection is [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool.
-    - **If no transaction is open, and no operation is in progress**, the connection is simply [closed](#note-on-terminology--closed-vs-destroyed) and returned to the pool with aborting any existing operations.
-
-**Transaction**
-  - **Lifecycle**: The underlying transaction remains open and uncommitted until the transaction is canceled or is explicitly committed or rolled back. When the transaction is committed or rolled back the underlying connection remains open, though the connection would also be closed automatically if the transaction was created directly from a pool.
-  
-  - **On Completion**: A transaction is only completed by explicitly committing it. Some patterns may call the commit API on the transaction on the successful completion of a callback. 
-
-  - **On Cancellation**:
-    - Any ongoing operation is immediately aborted, and the transaction is rolled back. The underlying connection remains open, though the connection would also be closed automatically if the transaction was created directly from a pool.
-  
-### Note on terminology : "closed" vs "destroyed"
-
-The purpose of connection pooling is to keep negotiated, authenticated connections to a remote storage service open and available so that they can be quickly obtained and used by a client application. At the same time, it desirable to prevent unintended side effects where one operation on a pooled connection affects subsequent but logically unrelated operations executed on the same connection.  
-
-To represent this, both APIs and this documentation use the term "closed" to mean marking the connection as exposed to client code as no longer active for subsequent operations, but without actually closing the underlying protocol connection. The term "destroy" is used to mean actually closing the underlying protocol connection and entirely removing it from the pool.
-
-The storage pattern described here intentionally does not include a destroy method on individual connections. The point of using a pool is to delegate responsibility for initializing and destroying protocol connections to the implementation details of a pool.
-
-### Abstract APIs
-
-The entire structural API can be summarized by the following interface definition, written here in TypeScript merely for example purposes. Details of each method are described below. Again, note that for any given storage type, the pool, connection, and transaction interfaces will *also* implement type-specific data operations such as `query` for a relational database, `insertOne` for a document store, or `set` for a key-value store.
+ The structural API can be summarized by the following interface definition, written here in TypeScript merely for example purposes. Details of each method are described below. Again, note that for any given storage type, the pool, connection, and transaction interfaces will *also* implement type-specific data operations such as `query` for a relational database, `insertOne` for a document store, or `set` for a key-value store.
 
 The transaction interface and `TxnOptions` are described in more detail in the [txn](./txn.md) pattern.
 
@@ -97,18 +58,56 @@ interface StoragePool {
   conn(ctx: Context): Promise<StorageConn>;
   beginTxn(ctx: IContext, opts?: TxnOptions): Promise<StorageTxn>;
   close(): Promise<void>;
+
+  // Crud operations for a given storage type
+  [op1](ctx: IContext, [...]): Promise<...>
+  [op2](ctx: IContext, [...]): Promise<...>
+  [op3](ctx: IContext, [...]): Promise<...>
 }
 
 interface StorageConn {
   beginTxn(ctx: IContext, opts?: TxnOptions): Promise<StorageTxn>;
   close(): Promise<void>;
+
+  // Crud operations for a given storage type
+  [op1](ctx: IContext, [...]): Promise<...>
+  [op2](ctx: IContext, [...]): Promise<...>
+  [op3](ctx: IContext, [...]): Promise<...>
 }
 
 interface StorageTxn {
-  commit(ctx: IContext): Promise<void>;
-  rollback(ctx: IContext): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+
+  // Crud operations for a given storage type
+  [op1](ctx: IContext, [...]): Promise<...>
+  [op2](ctx: IContext, [...]): Promise<...>
+  [op3](ctx: IContext, [...]): Promise<...>
 }
 ```
+ 
+In any given storage type, all three of these interfaces implement all of the CRUD APIs for the applicable type. That is, a relational SQL `query` could be invoked on a pool, a connection, or a transaction. The difference is in session continuity and in the effect of canceling the context provided to the operation.
+
+|Type|Method|Description|On Complete|Effect of Context|
+|-|-|-|-|-|
+|Pool|conn|Obtain a connection from the pool. |An open connection is returned|Context is used only for obtaining a connection. Canceling the context only has an effect if a connection was not yet returned, in which case the request is rejected.|
+|Pool|beginTxn|Obtain a connection and begin a transaction|A started transaction is returned|Context is retained for the life of the transaction. If the context is canceled before a connection is obtained or the transaction has started, then the call to `beginTxn` itself is rejected. If the transaction is started successfully (`beginTxn` returns) but the context is canceled before the transaction has been committed, then the transaction is rolled back.|
+|Pool|[op*]|Obtain a connection and execute a single operation|If the operation is an atomic read or write, then the connection is released back to the pool. If the operation returns a long-lived object such as an open cursor, then the underlying connection remains open until that object is closed|Context is retained for the duration of the operation and, if applicable, for the life of a long-lived object (such as a cursor) returned by the operation. If the context is canceled before the operation completes or before the long-lived object is closed, the operation itself is canceled or rolled back if physically possible, the long-lived object is closed or invalidated, and the underlying connection is [closed](#note-on-terminology--closed-vs-destroyed) released back to the pool|
+|Pool|close|Prevent any further connections. Outstanding requests via `conn` are rejected, but active connections are left alive|Returns only when all connections have been released back to the pool|--|
+|Conn|beginTxn|Begin a transaction on an open connection|A started transaction is returned|Context is retained for the life of the transaction. If the context is canceled before a transaction has started, then the call to `beginTxn` itself is rejected. If the transaction is started successfully (`beginTxn` returns) but the context is canceled before the transaction has been committed, then the transaction is rolled back.|
+|Conn|[op*]|Execute a single operation on the open connection|Atomic operation is completed and committed, or a long-lived object such as a cursor is returned. In either case the connection remains open, even if this operation failed.|Context is retained for the duration of the operation and, if applicable, for the life of a long-lived object (such as a cursor) returned by the operation. If the context is canceled before the operation completes, the operation itself is canceled or rolled back if physically possible, and any long-lived object is closed or invalidated, but the underlying connection is kept open for subsequent operations.|
+|Conn|[close](#note-on-terminology--closed-vs-destroyed)|Prevent any further operations on the connection. Waits for ongoing operations to complete. If the connection was obtained from a pool, closing the connection must also release the underlying storage connection back to the pool.|Returns only when all ongoing operations have completed|--|
+|Txn|[op*]|Execute a single operation within the running transaction.|Atomic operation is completed but not committed, or a long-lived object such as a cursor is returned. In either case the transaction remains open, even if this operation failed.|Context is retained for the duration of the operation and, if applicable, for the life of a long-lived object (such as a cursor) returned by the operation. If the context is canceled before the operation completes, the operation itself should be canceled or rolled back if physically possible, but the underlying transaction is kept open for subsequent operations.|
+|Txn|commit|Commit all changes made during the transaction. If the transaction was started directly from a pool, committing should also [close](#note-on-terminology--closed-vs-destroyed) and release the connection|Returns normally when transaction has committed successfully. If an error is encountered, the transaction is automatically rolled back and the call to commit is rejected|--|
+|Txn|rollback|Rollback any changes made through the transaction. If the transaction was started directly from a pool, committing should also [close](#note-on-terminology--closed-vs-destroyed) and release the connection|Returns normally when rollback operation has completed|--|
+
+### Note on terminology : "closed" vs "destroyed"
+
+The purpose of connection pooling is to keep negotiated, authenticated connections to a remote storage service open and available so that they can be quickly obtained and used by a client application. At the same time, it desirable to prevent unintended side effects where one operation on a pooled connection affects subsequent but logically unrelated operations executed on the same connection.  
+
+To represent this, both APIs and this documentation use the term "closed" to mean marking the connection as exposed to client code as no longer active for subsequent operations, but without actually closing the underlying protocol connection. The term "destroy" is used to mean actually closing the underlying protocol connection and entirely removing it from the pool.
+
+The storage pattern described here intentionally does not include a destroy method on individual connections. The point of using a pool is to delegate responsibility for initializing and destroying protocol connections to the implementation details of a pool.
 
 ## Type-Specific APIs Example: Stack
 
@@ -177,8 +176,8 @@ export interface StackTxn {
   peek(ctx: Context): Promise<any>;
   pop(ctx: Context): Promise<any>;
 
-  commit(ctx: IContext): Promise<void>;
-  rollback(ctx: IContext): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
 }
 ```
 

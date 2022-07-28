@@ -22,7 +22,7 @@ Implementations exist at three levels:
 
 1. **Top-level abstract (txn)**
 
-   These libraries contain the interfaces of the top-level txn pattern, an implementation of ChangeSet, and an implementation of storage-agnostic transaction workflows. The patterns implemented in these libraries are described in this document.
+   These libraries contain the interfaces of the top-level txn pattern, an implementation of [ChangeSet](#changeset), and an implementation of storage-agnostic transaction workflows. The patterns implemented in these libraries are described in this document.
 
 2. **Type-specific abstract**
 
@@ -52,8 +52,8 @@ A `Txn` is a minimal interface that represents a set of pending operations can b
 
 ```ts
 interface Txn {
-  commit(ctx: IContext): Promise<void>;
-  rollback(ctx: IContext): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
 }
 ```
  
@@ -62,23 +62,25 @@ interface Txn {
 ```go
 // Respect existing "Tx" naming convention
 type Tx interface {   
-  Commit(ctx context.Context) error
-  Rollback(ctx context.Context) error
+  Commit() error
+  Rollback() error
 }
 ```
 
 **Txn: C#**
 ```ts
 public interface Txn {
-  Task Commit(IContext ctx);
-  Task Rollback(IContext ctx);
+  Task Commit();
+  Task Rollback();
 }
 ```
 
 
 ### `Transactable` interface
 
-A transactable is any object that can start a transaction. Often this is a database pool or connection. If an underlying service supports nested transactions, the transactable could itself be a [transaction](#txn-interface).
+A transactable is any object that can start a transaction. Often this is a database pool or connection. If an underlying service supports nested transactions, the transactable could itself be a [transaction](#txn-interface). The beginTxn operation is the same as described in [**storage-pool**](./storage-pool.md#basic-pattern).  
+
+The context provided to the beginTxn operation is retained for the life of the transaction. If the context is canceled before a connection is obtained or the transaction has started, then the call to begin-transaction itself is rejected. If the transaction is started successfully (beginTxn returns) but the context is canceled before the transaction has been committed, then the transaction is rolled back.
 
 **Transactable: TypeScript**
 ```ts
@@ -104,38 +106,42 @@ public interface Transactable<T> where T : Txn {
   
 ### `ChangeSet`
 
-A ChangeSet is an in-memory transaction which simply accumulates a list of callbacks to invoke either on commit or rollback. 
-
 ```ts
 interface ChangeSet extends Txn {
   defer(fn: (ctx: IContext) => Promise<void>): void;
   deferFail(fn: (ctx: IContext) => Promise<void>): void;
-  commit(ctx: IContext): Promise<void>;
-  rollback(ctx: IContext): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
 }
 ```
 
+A ChangeSet is an in-memory transaction which simply accumulates a list of callbacks to invoke either on commit or rollback. 
+
 All callbacks registered with `defer` are executed in order when `commit` is called. If any of them fail, or if `rollback` is called explicitly, then all the callbacks registered with `deferFail` are executed in order.
 
-### `TxnChangeSet`
+The context provided to the defer and deferFail callbacks is the context provided when the changeset itself was created, usually via an implementation of `beginTxn`.
 
-A TxnChangeSet combines both the in-memory ChangeSet and an underlying transaction, usually in a database.
+### `TxnChangeSet`
  
 ```ts
  interface TxnChangeSet<T extends Txn> extends ChangeSet {
   deferTxn(fn: (ctx: IContext, txn: T) => Promise<void>): void;
   defer(fn: (ctx: IContext) => Promise<void>): void;
   deferFail(fn: (ctx: IContext) => Promise<void>): void;
-  commit(ctx: IContext): Promise<void>;
-  rollback(ctx: IContext): Promise<void>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
 }
 ```
 
+A TxnChangeSet combines both the in-memory ChangeSet and an underlying transaction, usually in a database.
+
 Callbacks registered with `deferTxn` will be run in a single underlying transaction. Callbacks registered with the base `defer` will be run only after the transaction, if needed, has successfully committed. Callbacks registered with `deferFail` are run if there are any errors in either the transaction or non-transaction callbacks, if committing the underlying transaction fails, or if `rollback` is called explicitly.
+
+The context provided to the defer and deferFail callbacks is the context provided when the changeset itself was created, usually via an implementation of `beginTxn`.
 
 ## Runners
 
-With the generic [transaction interfaces](#basic-patternq) defined, it is possible to implement uniform transaction running algorithms.
+With the generic [transaction interfaces](#basic-pattern) defined, it is possible to implement uniform transaction running algorithms.
 
 A transaction running function accepts a context and an asynchronous callback. The callback itself is a function that accepts a context and a transaction of a given type. The implicit contract is:
 
@@ -224,7 +230,7 @@ public interface TxnAccessor<T> where T : Txn {
  
 ### Getting a TxnRunner
 
-Implementations of the txn pattern provide factory methods for obtaining a [TxnRunner](#txnrunner) given an applicable [TxnAccessor](#context):
+Implementations of the txn pattern provide factory methods for obtaining a [TxnRunner](#txnrunner) given an applicable [TxnAccessor](#context).
 
 ```ts
 function txn(ctx: IContext): TxnRunner<Txn>;
@@ -252,7 +258,7 @@ The overloads of `txn` and `txnChangeSet` that explicitly accept a `TxnAccessor`
 
 A more convenient approach is to use a context setter function that attaches the transaction accessors themselves to the context. The transaction accessors can then be retrieved internally by the implementations of `txn` and `txnChangeSet` that only require a context. The limitation is the the transaction runners returned by these factory methods cannot know the specific type of the `Txn`.
 
-For a detailed example of both approaches, see [Example - MySQL]() in the documentation for the `@sabl/txn` package.
+For a detailed example of both approaches, see [Example - MySQL](https://github.com/libsabl/txn-js#example---mysql) in the documentation for the `@sabl/txn` package.
 
 ---
 &copy; 2022 Joshua Honig. All rights reserved. See [LICENSE](../LICENSE.md).
