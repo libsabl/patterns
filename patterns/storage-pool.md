@@ -8,7 +8,7 @@ sabl / [patterns](../README.md#patterns) / storage pool
 
 The primary purpose of describing this pattern is to set common expectations for [how pooled connections and transactions should behave](#basic-pattern) in asynchronous programming. The most important concept is distinguishing between **closing** pools or connections and **cancelling** operations via the contexts provided to pools, connections, transactions, or individual storage operations.
 
-The design of the top-level storage interfaces as well as the derived relational interfaces is based on the go standard library [`database/sql` package](https://pkg.go.dev/database/sql). That package actually does not define explicit interfaces for the pool (`DB`), connection (`Conn`), or transaction (`Txn`) types. This work extracts the common patterns implicit in that package. One minor difference is the that `commit` and `rollback` methods of the `Txn` interface accept a [context](./context.md).
+The design of the top-level storage interfaces as well as the derived relational interfaces is based on the go standard library [`database/sql` package](https://pkg.go.dev/database/sql). That package actually does not define explicit interfaces for the pool (`DB`), connection (`Conn`), or transaction (`Txn`) types. This work extracts the common patterns implicit in that package.
  
 ## Transaction workflows
 

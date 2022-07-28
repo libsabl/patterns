@@ -46,7 +46,7 @@ The basic pattern is represented in the complementary `Txn` and `Transactable` i
 
 ### `Txn` interface
 
-A `Txn` is a minimal interface that represents a set of pending operations can be either committed or rolled back. Both operations accept a context, which may or may not be used by an underlying implementation.
+A `Txn` is a minimal interface that represents a set of pending operations that can be either committed or rolled back.
 
 **Txn: TypeScript**
 
